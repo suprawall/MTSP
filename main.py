@@ -5,7 +5,7 @@ from graph_init import blocks_graph, add_weight_edge
 from execute_epsilon import execute_epsilon, solveur, get_weight_path
 from execute_lagrangienne import get_min_path, execute_lagrangienne
 
-NB_BLOCKS = 25
+NB_BLOCKS = 50
 NB_MAX_COUT = 20
 NB_MAX_DUREE = 20
 COMPTEUR_FONCTIONS = 0
@@ -28,15 +28,13 @@ pd = get_weight_path(G, sd, weights)
 
 max_duree = int((pc[1] + pd[1]) / 2)
     
+
 plt_epsilon, pareto_epsilon = execute_epsilon(G, weights, pc, pd)
 plt_lagrange, pareto_lagrange = execute_lagrangienne(G, weights, max_duree, pc, pd)
 
-"""plt_epsilon.show()
-plt_lagrange.show()"""
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))  # 1 ligne, 2 colonnes
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))  
 
-# Tracer la frontière Pareto epsilon dans le premier sous-graphe
 epsilon_couts = [point[0] for point in pareto_epsilon]
 epsilon_durees = [point[1] for point in pareto_epsilon]
 ax1.scatter(epsilon_couts, epsilon_durees, color='blue')
@@ -45,7 +43,6 @@ ax1.set_xlabel("Coût")
 ax1.set_ylabel("Durée")
 ax1.grid(True)
 
-# Tracer la frontière Pareto lagrangienne dans le deuxième sous-graphe
 lagrange_couts = [point[0] for point in pareto_lagrange]
 lagrange_durees = [point[1] for point in pareto_lagrange]
 ax2.scatter(lagrange_couts, lagrange_durees, color='red')
@@ -54,7 +51,6 @@ ax2.set_xlabel("Coût")
 ax2.set_ylabel("Durée")
 ax2.grid(True)
 
-# Afficher le graphique avec les deux sous-graphes
 plt.tight_layout()
 plt.show()
 

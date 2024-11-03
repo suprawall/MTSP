@@ -69,7 +69,7 @@ def solveur(G, weights, critere):
     return solution, objective_value
     
 
-def solveur_containte(G, weights, epsilon):
+def solveur_containte(G, weights, a_minimiser, epsilon):
     """solveur avec pulp, Min(coût) avec durée < epsilon
 
     Args:
@@ -82,8 +82,12 @@ def solveur_containte(G, weights, epsilon):
     prob = LpProblem("Minimize_Cost", LpMinimize)
     var_edges = LpVariable.dicts("Edges", edges, 0, 1, cat='Binary')
     
-    prob += lpSum([var_edges[edge] * weights[i][0] for i, edge in enumerate(edges)])
-    prob += lpSum([var_edges[edge] * weights[i][1] for i, edge in enumerate(edges)]) <= epsilon
+    if(a_minimiser == 0):
+        prob += lpSum([var_edges[edge] * weights[i][0] for i, edge in enumerate(edges)])
+        prob += lpSum([var_edges[edge] * weights[i][1] for i, edge in enumerate(edges)]) <= epsilon
+    elif(a_minimiser == 1):
+        prob += lpSum([var_edges[edge] * weights[i][1] for i, edge in enumerate(edges)])
+        prob += lpSum([var_edges[edge] * weights[i][0] for i, edge in enumerate(edges)]) <= epsilon
     
     source, target = 1, max(G.nodes()) - 1
     
@@ -112,27 +116,24 @@ def execute_epsilon(G, weights, pc, pd):
     frontiere_pareto.append(pd)
 
     nv_epsilon = pc[1] - 1
-    i = 2
-
+    
     while(True):
-        s, _ = solveur_containte(G, weights, nv_epsilon)
+        s, _ = solveur_containte(G, weights, 0, nv_epsilon)
         p_s = get_weight_path(G, s, weights)
         if(p_s == pd[1] or p_s in frontiere_pareto):
             break
-        res = est_domine(p_s, frontiere_pareto)
-        if(res is not None):
-            print("la solution: "+str(p_s)+" vient d'être trouvée mais elle est dominée par: "+str(res))
-        res = domine(p_s, frontiere_pareto)
-        if(res is not None):
-            print("la solution: "+str(p_s)+" vient d'être trouvée mais elle domine: "+str(res))
-            break
+        s2, _ = solveur_containte(G, weights, 1, p_s[0])
+        p_s2 = get_weight_path(G, s2, weights)
         frontiere_pareto.append(p_s)
+        if(p_s2 not in frontiere_pareto):
+            frontiere_pareto.append(p_s2)
         
-        nv_epsilon = p_s[1] - 1
+        nv_epsilon = p_s2[1] - 1
+        
 
     print(frontiere_pareto)
 
-    plt.figure(figsize=(8, 6))
+    """plt.figure(figsize=(8, 6))
     pareto_couts = [cout for cout, duree in frontiere_pareto]
     pareto_durees = [duree for cout, duree in frontiere_pareto]
     plt.scatter(pareto_couts, pareto_durees, color='red', label='Frontière de Pareto')
@@ -140,9 +141,9 @@ def execute_epsilon(G, weights, pc, pd):
     plt.xlabel("Coût")
     plt.ylabel("Durée")
     plt.grid(True)
-    plt.legend()
+    plt.legend()"""
 
-    return plt, frontiere_pareto
+    return _, frontiere_pareto
 
 
 

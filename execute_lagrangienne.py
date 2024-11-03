@@ -189,9 +189,7 @@ def execute_lagrangienne(G, weights, max_duree, pc, pd):
     plt.legend()
     plt.grid(True)
 
-
-
-    plt.figure(figsize=(8, 6))
+    """plt.figure(figsize=(8, 6))
     pareto_couts = [cout for cout, duree in frontiere_pareto]
     pareto_durees = [duree for cout, duree in frontiere_pareto]
     plt.scatter(pareto_couts, pareto_durees, color='red', label='Frontière de Pareto')
@@ -199,7 +197,7 @@ def execute_lagrangienne(G, weights, max_duree, pc, pd):
     plt.xlabel("Coût")
     plt.ylabel("Durée")
     plt.grid(True)
-    plt.legend()
+    plt.legend()"""
 
     return plt, frontiere_pareto
 
