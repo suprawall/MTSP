@@ -146,48 +146,63 @@ def solver_tsp(G, weights):
     objective_value = value(prob.objective)
 
     return solution, objective_value
+
+def get_nv_solution(list, contrainte):
+    respecte = [l for l in list if l[1] <= contrainte]
+    sol = min(respecte, key=lambda l: l[0])
+    return sol
+
+    
     
     
 
-def execute_lagrangienne(G, weights, max_duree, pc, pd):
+def execute_lagrangienne(G, weights, start_contrainte, pc, pd):
     
     plt.figure(figsize=(8, 6))
     
     frontiere_pareto = []
     frontiere_pareto.append(pc)
     frontiere_pareto.append(pd)
+    next_contrainte = start_contrainte
     
-    parametre_fonctions = []                       #(a1, b1), (a2, b2)....
-    alpha_values = np.linspace(-10, 10, 200)
-    compteur_fonctions = 1
+    for _ in range(10):
+        
+        solution_itération = []
+        
+        parametre_fonctions = []                       #(a1, b1), (a2, b2)....
+        alpha_values = np.linspace(-10, 10, 200)
+        compteur_fonctions = 1
 
-    parametre_fonctions.append(add_path_function(pc[0], pc[1], alpha_values, compteur_fonctions, max_duree))
-    compteur_fonctions += 1
-    parametre_fonctions.append(add_path_function(pd[0], pd[1], alpha_values, compteur_fonctions, max_duree))
-    compteur_fonctions += 1
-
-
-    while(True):
-        nv_alpha2 = find_max_of_min(parametre_fonctions, alpha_values)
-        nv_weights = []
-        for cout, duree in weights:
-            nv_weights.append(cout + nv_alpha2*duree)
-        nv_s, _ = solver_tsp(G, nv_weights)
-        nv_s_p = get_weight_path(G, nv_s, weights)
-        parametre_fonctions.append(add_path_function(nv_s_p[0], nv_s_p[1], alpha_values, compteur_fonctions, max_duree))
-        frontiere_pareto.append(nv_s_p)
-        """nv_path = get_min_path(G, paths, weights, nv_weights=nv_weights, criteria=None)
-        parametre_fonctions.append(add_path_function(nv_path[1][0], nv_path[1][1], alpha_values, compteur_fonctions, max_duree))
-        frontiere_pareto.append(nv_path[1])"""
+        parametre_fonctions.append(add_path_function(pc[0], pc[1], alpha_values, compteur_fonctions, next_contrainte))
         compteur_fonctions += 1
-        if(parametre_fonctions[-2] == parametre_fonctions[-1]):
-            break
+        parametre_fonctions.append(add_path_function(pd[0], pd[1], alpha_values, compteur_fonctions, next_contrainte))
+        compteur_fonctions += 1
 
-    plt.title("Représentation des fonctions affines")
+
+        while(True):
+            nv_alpha2 = find_max_of_min(parametre_fonctions, alpha_values)
+            nv_weights = []
+            for cout, duree in weights:
+                nv_weights.append(cout + nv_alpha2*duree)
+            nv_s, _ = solver_tsp(G, nv_weights)
+            nv_s_p = get_weight_path(G, nv_s, weights)
+            parametre_fonctions.append(add_path_function(nv_s_p[0], nv_s_p[1], alpha_values, compteur_fonctions, next_contrainte))
+            solution_itération.append(nv_s_p)
+            compteur_fonctions += 1
+            if(parametre_fonctions[-2] == parametre_fonctions[-1]):
+                break
+        
+        #quelle solution on garde
+        sol = get_nv_solution(solution_itération, next_contrainte)
+        frontiere_pareto.append(sol)
+        next_contrainte = sol[1] - 1
+        
+
+    """plt.title("Représentation des fonctions affines")
     plt.xlabel("α")
     plt.ylabel("Valeur de la fonction")
     plt.legend()
-    plt.grid(True)
+    plt.grid(True)"""
 
     """plt.figure(figsize=(8, 6))
     pareto_couts = [cout for cout, duree in frontiere_pareto]
@@ -199,7 +214,7 @@ def execute_lagrangienne(G, weights, max_duree, pc, pd):
     plt.grid(True)
     plt.legend()"""
 
-    return plt, frontiere_pareto
+    return _, frontiere_pareto
 
 
     """# Afficher le graphe
