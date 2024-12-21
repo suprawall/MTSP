@@ -1,5 +1,5 @@
 import networkx as nx
-from pulp import LpProblem, LpVariable, LpMinimize, lpSum, LpStatus, value
+from pulp import LpProblem, LpVariable, LpMinimize, lpSum, LpStatus, value, PULP_CBC_CMD
 from graph_init import blocks_graph, add_weight_edge
 import matplotlib.pyplot as plt
 
@@ -57,7 +57,8 @@ def solveur(G, weights, critere):
         else:  # Tous les autres nœuds doivent avoir des flux entrants et sortants égaux (conservation du flux)
             prob += lpSum([var_edges[edge] for edge in G.in_edges(node)]) == lpSum([var_edges[edge] for edge in G.out_edges(node)])
     
-    prob.solve()
+    solver = PULP_CBC_CMD(msg=False)
+    prob.solve(solver)
 
     s = [var_edges[edge].varValue for edge in edges]
     solution = []
@@ -99,7 +100,8 @@ def solveur_containte(G, weights, a_minimiser, epsilon):
         else:  # Tous les autres nœuds doivent avoir des flux entrants et sortants égaux (conservation du flux)
             prob += lpSum([var_edges[edge] for edge in G.in_edges(node)]) == lpSum([var_edges[edge] for edge in G.out_edges(node)])
     
-    prob.solve()
+    solver = PULP_CBC_CMD(msg=False)
+    prob.solve(solver)
 
     s = [var_edges[edge].varValue for edge in edges]
     solution = []
@@ -110,17 +112,19 @@ def solveur_containte(G, weights, a_minimiser, epsilon):
 
     return solution, objective_value
 
-def execute_epsilon(G, weights, pc, pd):
+def execute_brut(G, weights, pc, pd):
+    print("----------------BRUTFORCE-----------------")
     frontiere_pareto = []
     frontiere_pareto.append(pc)
-    frontiere_pareto.append(pd)
 
     nv_epsilon = pc[1] - 1
-    
+    i = 0
     while(True):
+        i += 1
+        print("itérations : "+str(i))
         s, _ = solveur_containte(G, weights, 0, nv_epsilon)
         p_s = get_weight_path(G, s, weights)
-        if(p_s == pd[1] or p_s in frontiere_pareto):
+        if(p_s == frontiere_pareto[-1][1] or p_s in frontiere_pareto):
             break
         s2, _ = solveur_containte(G, weights, 1, p_s[0])
         p_s2 = get_weight_path(G, s2, weights)
@@ -131,25 +135,4 @@ def execute_epsilon(G, weights, pc, pd):
         nv_epsilon = p_s2[1] - 1
         
 
-    print(frontiere_pareto)
-
-    """plt.figure(figsize=(8, 6))
-    pareto_couts = [cout for cout, duree in frontiere_pareto]
-    pareto_durees = [duree for cout, duree in frontiere_pareto]
-    plt.scatter(pareto_couts, pareto_durees, color='red', label='Frontière de Pareto')
-    plt.title("Frontière de Pareto Epsilon")
-    plt.xlabel("Coût")
-    plt.ylabel("Durée")
-    plt.grid(True)
-    plt.legend()"""
-
     return _, frontiere_pareto
-
-
-
-
-
-
-
-
-

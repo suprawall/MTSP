@@ -33,11 +33,9 @@ def add_weight_edge(G, nb_max_cout, nb_max_duree):
 def blocks_graph(nb_blocks, blocks_spacing):
     G = nx.DiGraph()
 
-    # Initialiser les positions des nœuds
     pos = {}
     node_counter = 1  
 
-    # Créer le premier bloc de 4 nœuds et les positionner
     first_block_nodes = list(range(node_counter, node_counter + 4))
     add_block_edges(G, first_block_nodes)
 
@@ -46,7 +44,6 @@ def blocks_graph(nb_blocks, blocks_spacing):
     pos[first_block_nodes[2]] = (1, 1)  
     pos[first_block_nodes[3]] = (0, 1)  
 
-    # Mettre à jour le compteur de nœuds
     node_counter += 4
     first_iteration = True
 
@@ -62,28 +59,12 @@ def blocks_graph(nb_blocks, blocks_spacing):
         G.add_edges_from([(last_block_nodes[0], new_block_nodes[0]),
                         (last_block_nodes[1], new_block_nodes[1]),
                         (new_block_nodes[1], new_block_nodes[0]),
-                        (last_block_nodes[0], new_block_nodes[1]),  # Diagonale
-                        (last_block_nodes[1], new_block_nodes[0])])  # Diagonale
+                        (last_block_nodes[0], new_block_nodes[1]),  
+                        (last_block_nodes[1], new_block_nodes[0])])  
 
-        # Positionner les nouveaux nœuds pour qu'ils soient alignés
         pos[new_block_nodes[0]] = (1 + b * blocks_spacing, 1)  # Aligné sur la première rangée
         pos[new_block_nodes[1]] = (1 + b * blocks_spacing, 0)  # Aligné sur la deuxième rangée
         
         node_counter += 2
         
     return G
-
-
-#----------------------------------------------Small World----------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-

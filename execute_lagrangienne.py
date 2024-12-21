@@ -2,48 +2,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-from pulp import LpProblem, LpVariable, LpMinimize, lpSum, LpStatus, value
-from execute_epsilon import get_weight_path
+from pulp import LpProblem, LpVariable, LpMinimize, lpSum, LpStatus, value, PULP_CBC_CMD
+from execute_brutforce import get_weight_path
 
 
-
-def get_random_path(G, weights):
-    current_node = 1
-    path = [current_node]
-    path_weight = [0, 0]
-    edges = list(G.edges())
-    
-    while current_node != (max(G.nodes()) - 1):
-        neighbors = list(G.successors(current_node))
-        next_node = random.choice(neighbors)
-        
-        edge = (current_node, next_node)
-        path_weight[0] += weights[edges.index(edge)][0]  # Coût
-        path_weight[1] += weights[edges.index(edge)][1]  # Durée
-        
-        current_node = next_node
-        path.append(current_node)
-    
-    return (path, path_weight)
-
-def execute_random_path(G, weights, nb):
-    for i in range(nb):
-        random_path = get_random_path(G, weights)
-        cout, sign, duree = add_path_function(random_path)
-        
-        print("Chemin aléatoire n°"+str(i+1)+" : "+str(random_path[0]))
-        print("Coût : "+str(cout)+", Durée : "+str(duree))
-        
-        # Tracer la fonction affine
-        alpha = np.linspace(0, 10, 100)  # Génère 100 valeurs pour alpha
-        if sign == 1:
-            y = cout + alpha * duree
-            label = f"{cout} + α * {duree}"
-        else:
-            y = cout - alpha * duree
-            label = f"{cout} - α * {duree}"
-        
-        plt.plot(alpha, y, label=label)
 
 def add_path_function(cout, duree, alpha, compt, max_duree):
     d = duree - max_duree
@@ -52,17 +14,9 @@ def add_path_function(cout, duree, alpha, compt, max_duree):
     label = f"{compt}: {cout} + α * {d}"
     #return (cout, +1, duree)  # Représente "cout + α * duree"
         
-    plt.plot(alpha, y, label=label)
+    #plt.plot(alpha, y, label=label)
     return d, cout
 
-def crossing_point(tab):
-    f1 = tab[0]
-    f2 = tab[1]
-    a1, b1 = f1
-    a2, b2 = f2
-    print(f1)
-    print(f2)
-    return (b2 - b1) / (a1 - a2)
 
 def get_min_path(G, paths, weights,  nv_weights = None, criteria=None):
     """
@@ -136,7 +90,8 @@ def solver_tsp(G, weights):
         else: 
             prob += lpSum([var_edges[edge] for edge in G.in_edges(node)]) == lpSum([var_edges[edge] for edge in G.out_edges(node)])
     
-    prob.solve()
+    solver = PULP_CBC_CMD(msg=False)
+    prob.solve(solver)
     
     s = [var_edges[edge].varValue for edge in edges]
     solution = []
@@ -149,35 +104,34 @@ def solver_tsp(G, weights):
 
 def get_nv_solution(list, contrainte):
     respecte = [l for l in list if l[1] <= contrainte]
+    if(not respecte):
+        return None
     sol = min(respecte, key=lambda l: l[0])
     return sol
 
-    
-    
-    
+
 
 def execute_lagrangienne(G, weights, start_contrainte, pc, pd):
+    print("----------------LAGRANGE-----------------")
     
-    plt.figure(figsize=(8, 6))
     
     frontiere_pareto = []
     frontiere_pareto.append(pc)
     frontiere_pareto.append(pd)
     next_contrainte = start_contrainte
+    i = 0                     
+    alpha_values = np.linspace(-10, 10, 200)
+   
     
-    for _ in range(10):
-        
+    while(True):
+        i+=1
+        print("itérations: "+str(i))
         solution_itération = []
-        
-        parametre_fonctions = []                       #(a1, b1), (a2, b2)....
-        alpha_values = np.linspace(-10, 10, 200)
+        parametre_fonctions = []                #(a1, b1), (a2, b2)....
         compteur_fonctions = 1
-
-        parametre_fonctions.append(add_path_function(pc[0], pc[1], alpha_values, compteur_fonctions, next_contrainte))
-        compteur_fonctions += 1
-        parametre_fonctions.append(add_path_function(pd[0], pd[1], alpha_values, compteur_fonctions, next_contrainte))
-        compteur_fonctions += 1
-
+        for sol in frontiere_pareto:
+            parametre_fonctions.append(add_path_function(sol[0], sol[1], alpha_values, compteur_fonctions, next_contrainte))
+            compteur_fonctions += 1
 
         while(True):
             nv_alpha2 = find_max_of_min(parametre_fonctions, alpha_values)
@@ -194,32 +148,12 @@ def execute_lagrangienne(G, weights, start_contrainte, pc, pd):
         
         #quelle solution on garde
         sol = get_nv_solution(solution_itération, next_contrainte)
+        if(not sol):
+            break
         frontiere_pareto.append(sol)
         next_contrainte = sol[1] - 1
         
-
-    """plt.title("Représentation des fonctions affines")
-    plt.xlabel("α")
-    plt.ylabel("Valeur de la fonction")
-    plt.legend()
-    plt.grid(True)"""
-
-    """plt.figure(figsize=(8, 6))
-    pareto_couts = [cout for cout, duree in frontiere_pareto]
-    pareto_durees = [duree for cout, duree in frontiere_pareto]
-    plt.scatter(pareto_couts, pareto_durees, color='red', label='Frontière de Pareto')
-    plt.title("Frontière de Pareto Lagrange")
-    plt.xlabel("Coût")
-    plt.ylabel("Durée")
-    plt.grid(True)
-    plt.legend()"""
+        
 
     return _, frontiere_pareto
 
-
-    """# Afficher le graphe
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=2000, edge_color='gray', arrows=True)
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
-
-    # Afficher le graphe
-    plt.show()"""
